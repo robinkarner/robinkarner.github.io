@@ -1,14 +1,17 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 export default class Histogram {
-    constructor(_config){
+    constructor(_config, data, dispatcher){
         this.config = {
-            data: _config.data,
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth,
             containerHeight: _config.containerHeight,
             margin: { top: 20, bottom: 20, right: 50, left: 50 }
         }
+
+        this.data = data
+
+        this.dispatcher = dispatcher;
 
         this.initVis();
     }
@@ -16,12 +19,10 @@ export default class Histogram {
     initVis() {
         let vis = this;
 
-        let data = vis.config.data;
+        let data = vis.data;
 
         const width = vis.config.containerWidth - vis.config.margin.left - vis.config.margin.right;
         const height = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
-
-        const barWidth = (width / data.length) - 0.15;
 
         vis.svg = d3.select(vis.config.parentElement).append("svg")
             .attr("width", vis.config.containerWidth)
@@ -61,10 +62,10 @@ export default class Histogram {
             .data(data)
             .enter()
         .append("rect")
-            .attr("width", barWidth)
+            .attr("width", vis.xScale.bandwidth())
             .attr("height", d => height - vis.yScale(d.unemployed_sum))
             .attr("x", d => vis.xScale(d.month))
-            .attr("y", d => vis.yScale(d.unemployed_sum))
+            .attr("y", d => vis.yScale(d.unemployed_sum));
 
         const windowWidth = vis.xScale.step() * 12;
 
@@ -87,8 +88,13 @@ export default class Histogram {
 
                     d3.select(this).attr("x", snappedX);
 
-                    console.log(data[startIndex], data[startIndex + 11])
+                })
+                .on("end", function (event) {
+                    let startIndex = Math.round((event.x - (windowWidth / 2)) / vis.xScale.step());
 
+                    startIndex = Math.max(0, Math.min(startIndex, data.length - 12));
+
+                    vis.dispatcher.call("windowChanged", event, {startDate: data[startIndex].month, endDate: data[startIndex + 11].month});
                 })
             );
     }
