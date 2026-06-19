@@ -163,7 +163,8 @@ export default class Treemap {
             if(w < 50 || h < 30) return;
 
             const label = d.data.label || d.data.name || "";
-            const avg = `Ø ${d3.format(".1f")(d.data.averageStay || 0)} months`;
+            const avg = `⌀ ${d3.format(".1f")(d.data.averageStay || 0)} months unemployed`;
+            const people = `⌀ ${Math.round(d.data.balance / 12)} people unemployed per month`;
 
             const maxChars = Math.max(3, Math.floor(w / 7));
 
@@ -185,6 +186,12 @@ export default class Treemap {
                 .attr("dy", "1.1em")
                 .attr("fill-opacity", 0.75)
                 .text(vis.truncateText(avg, maxChars));
+
+            text.append("tspan")
+                .attr("x", 4)
+                .attr("dy", "1.1em")
+                .attr("fill-opacity", 0.75)
+                .text(vis.truncateText(people, maxChars));
         });
     }
 
