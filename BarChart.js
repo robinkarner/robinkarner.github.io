@@ -1,7 +1,7 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 export default class BarChart {
-    constructor(_config, data) {
+    constructor(_config, data, dispatcher) {
         this.config = {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth,
@@ -10,6 +10,10 @@ export default class BarChart {
         }
 
         this.data = data;
+
+        this.dispatcher = dispatcher;
+
+        this.selectedBar = null;
 
         this.initVis();
     }
@@ -55,11 +59,54 @@ export default class BarChart {
             .data(data)
             .enter()
         .append("rect")
+            .on("click", (event, d) => {
+                let filterAspect = null;
+                let filterValue = null;
+
+                if(vis.selectedBar !== d.demographic) {
+
+                    vis.selectedBar = d.demographic;
+
+                    switch (d.demographic) {
+                        case "male":
+                            filterAspect = "gender";
+                            filterValue = "M";
+                            break;
+                        case "female":
+                            filterAspect = "gender";
+                            filterValue = "W";
+                            break;
+                        case "citizens":
+                            filterAspect = "nationality";
+                            filterValue = "Inländer_innen";
+                            break;
+                        case "non-citizens":
+                            filterAspect = "nationality";
+                            filterValue = "Ausländer_innen";
+                    }
+                }else{
+                    vis.selectedBar = null;
+                    switch (d.demographic) {
+                        case "male":
+                        case "female":
+                            filterAspect = "gender";
+                            break;
+                        case "citizens":
+                        case "non-citizens":
+                            filterAspect = "nationality";
+                    }
+                }
+
+                vis.svg.selectAll("rect").classed("selected", bar => bar.demographic === vis.selectedBar);
+
+                vis.dispatcher.call("filtersChanged", event, {filter: filterAspect, value: filterValue});
+
+            })
+            .transition()
             .attr("width", vis.xScale.bandwidth())
             .attr("height", d => vis.height - vis.yScale(d.value))
             .attr("x", d => vis.xScale(d.demographic))
-            .attr("y", d => vis.yScale(d.value))
-            .transition();
+            .attr("y", d => vis.yScale(d.value));
     }
 
     updateVis(newData) {
