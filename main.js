@@ -5,6 +5,7 @@ import Treemap from "./Treemap.js";
 import ChoroplethMap from "./ChoroplethMap.js";
 import ColorLegend from "./ColorLegend.js";
 import DonutChart from "./DonutChart.js";
+import LineChart from "./LineChart.js"; // neuer Teil
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 await initDB();
@@ -38,8 +39,8 @@ let unemployedPerMonth = await query(`SELECT STRFTIME(CAST(Datum AS DATE), '%Y-%
 
 const timeline = new Histogram({
     parentElement: "#timeline-chart-container",
-    containerWidth: 1000,
-    containerHeight: 100,
+    containerWidth: 1300,
+    containerHeight: 150,
 }, unemployedPerMonth, dispatcher);
 
 let data = await getData("2025-06", "2026-05");
@@ -73,8 +74,8 @@ const nationalityBarChart = new BarChart({
 
 const treeMap = new Treemap({
     parentElement: "#treemap-container",
-    containerWidth: 600,
-    containerHeight: 400,
+    containerWidth: 1300,
+    containerHeight: 450,
     scaleMaximum: sharedScaleMax,
 }, formattedJobData, dispatcher);
 
@@ -86,7 +87,7 @@ document.querySelector("#zoom-out").addEventListener("click", () => {
 const choroplethMap = new ChoroplethMap({
     parentElement: "#choropleth-container",
     containerWidth: 600,
-    containerHeight: 400,
+    containerHeight: 300,
     scaleMaximum: sharedScaleMax,
 }, topoData, formattedChoroplethData, dispatcher);
 
@@ -98,20 +99,51 @@ const legend = new ColorLegend({
 
 const genderDonutChart = new DonutChart({
     parentElement: "#gender-donut-container",
-    containerWidth: 300,
-    containerHeight: 300,
+    containerWidth: 250,
+    containerHeight: 250,
 }, formattedPieChartData.gender);
 
 const nationalityDonutChart = new DonutChart({
     parentElement: "#nationality-donut-container",
-    containerWidth: 300,
-    containerHeight: 300,
+    containerWidth: 250,
+    containerHeight: 250,
 }, formattedPieChartData.nationality);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// neuer Teil: Line Chart (durchschnittliche Verweildauer über den Gesamtzeitraum)
+// ─────────────────────────────────────────────────────────────────────────────
+const allMonths = unemployedPerMonth.map(d => d.month);
+
+// Umkehrung von stateByDigit, damit ein ausgewähltes Bundesland in den SQL-Filter passt
+const digitByState = Object.fromEntries(
+    Object.entries(stateByDigit).map(([digit, name]) => [name, digit])
+);
+
+// Startmonat des aktuell am Slider ausgewählten 12-Monats-Fensters (= markierter Punkt)
+let currentWindowStart = allMonths[allMonths.length - 12];
+
+const lineChart = new LineChart({
+    parentElement: "#line-chart-container",
+    containerWidth: 800,
+    containerHeight: 250,
+}, {
+    allMonths,
+    points: computeAverageStayLine(await getLineData(), allMonths),
+    markerMonth: currentWindowStart
+});
+// ─────────────────────────────────────────────────────────────────────────────
+// ende neuer Teil
+// ─────────────────────────────────────────────────────────────────────────────
 
 dispatcher.on("windowChanged", async windowDates => {
     data = await getData(windowDates.startDate, windowDates.endDate);
 
     updateChartData();
+
+    // ─── neuer Teil: markierten Punkt auf das neue Fenster setzen ───
+    currentWindowStart = windowDates.startDate;
+    lineChart.updateMarker(currentWindowStart);
+    // ─── ende neuer Teil ───
 
 });
 
@@ -128,6 +160,10 @@ dispatcher.on("filtersChanged", filterUpdate => {
     }
 
     updateChartData();
+
+    // ─── neuer Teil: Line Chart an die geänderten Filter anpassen ───
+    updateLineChart();
+    // ─── ende neuer Teil ───
 
 });
 
@@ -472,3 +508,82 @@ function getSharedScaleMax(jobData, stateData){
 
     return d3.quantile(allValues, 0.95) ?? d3.max(allValues) ?? 1;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// neuer Teil: Daten + Berechnung für den Line Chart
+//
+// getLineData()             holt pro Monat die Summen (entries/balance/departures)
+//                           für die aktuell aktiven Filter (Gender, Nationality,
+//                           Bundesland und Beruf/Treemap-Auswahl).
+// computeAverageStayLine()  bildet daraus rollierende 12-Monats-Fenster und
+//                           berechnet je Fenster die durchschnittliche Verweildauer.
+//                           Punkte sitzen am Startmonat ihres Fensters; an den
+//                           Rändern fehlen Werte, weil ein volles Jahr nötig ist.
+// updateLineChart()         lädt + berechnet neu und aktualisiert den Chart.
+// ─────────────────────────────────────────────────────────────────────────────
+async function getLineData(){
+    let conditions = [];
+
+    if(filters.gender)      conditions.push(`GESCHLECHT = '${filters.gender}'`);
+    if(filters.nationality) conditions.push(`NATIONALITAET = '${filters.nationality}'`);
+    if(filters.state)       conditions.push(`LEFT(CAST(RGSCODE AS VARCHAR), 1) = '${digitByState[filters.state]}'`);
+    if(filters.job)         conditions.push(`LPAD(CAST(BERUFS4STELLER AS VARCHAR), 4, '0') LIKE '${filters.job}%'`);
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    return await query(`
+        SELECT STRFTIME(CAST(DATUM AS DATE), '%Y-%m') AS month,
+               CAST(SUM(ZUGANG)  AS INTEGER) AS entries,
+               CAST(SUM(BESTAND) AS INTEGER) AS balance,
+               CAST(SUM(ABGANG)  AS INTEGER) AS departures
+        FROM unemployment
+        ${whereClause}
+        GROUP BY 1
+        ORDER BY 1;
+    `);
+}
+
+function computeAverageStayLine(monthlyRows, months, windowSize = 12){
+    const byMonth = new Map(monthlyRows.map(row => [row.month, row]));
+
+    // an alle Monate ausrichten, damit die Fenster echte 12 Kalendermonate umfassen
+    const series = months.map(month => {
+        const row = byMonth.get(month);
+        return {
+            month,
+            entries: row ? (row.entries ?? 0) : 0,
+            balance: row ? (row.balance ?? 0) : 0,
+            departures: row ? (row.departures ?? 0) : 0
+        };
+    });
+
+    const points = [];
+
+    for(let i = 0; i + windowSize <= series.length; i++){
+        let entries = 0, balance = 0, departures = 0;
+
+        for(let j = i; j < i + windowSize; j++){
+            entries    += series[j].entries;
+            balance    += series[j].balance;
+            departures += series[j].departures;
+        }
+
+        const denominator = (entries + departures) * 0.5;
+
+        points.push({
+            month: series[i].month,
+            averageStay: denominator > 0 ? balance / denominator : 0
+        });
+    }
+
+    return points;
+}
+
+async function updateLineChart(){
+    const monthlyRows = await getLineData();
+    const points = computeAverageStayLine(monthlyRows, allMonths);
+    lineChart.updateVis({points, markerMonth: currentWindowStart});
+}
+// ─────────────────────────────────────────────────────────────────────────────
+// ende neuer Teil
+// ─────────────────────────────────────────────────────────────────────────────

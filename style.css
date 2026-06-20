@@ -1,3 +1,11 @@
 rect.selected {
     fill: red;
 }
+
+.default-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
