@@ -4,6 +4,7 @@ import BarChart from "./BarChart.js";
 import Treemap from "./Treemap.js";
 import ChoroplethMap from "./ChoroplethMap.js";
 import ColorLegend from "./ColorLegend.js";
+import DonutChart from "./DonutChart.js";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 await initDB();
@@ -46,6 +47,7 @@ let data = await getData("2025-06", "2026-05");
 let formattedBarChartData = formatBarChartData(data);
 let formattedJobData = formatJobData(data);
 let formattedChoroplethData = formatChoroplethData(data);
+let formattedPieChartData = formatPieChartData(data);
 
 let sharedScaleMax = getSharedScaleMax(formattedJobData, formattedChoroplethData);
 
@@ -94,6 +96,18 @@ const legend = new ColorLegend({
     containerHeight: 300
 }, sharedScaleMax);
 
+const genderDonutChart = new DonutChart({
+    parentElement: "#gender-donut-container",
+    containerWidth: 300,
+    containerHeight: 300,
+}, formattedPieChartData.gender);
+
+const nationalityDonutChart = new DonutChart({
+    parentElement: "#nationality-donut-container",
+    containerWidth: 300,
+    containerHeight: 300,
+}, formattedPieChartData.nationality);
+
 dispatcher.on("windowChanged", async windowDates => {
     data = await getData(windowDates.startDate, windowDates.endDate);
 
@@ -141,6 +155,11 @@ function updateChartData(){
     treeMap.updateVis(treeMapData, sharedScaleMax);
     choroplethMap.updateVis(choroplethData, sharedScaleMax);
     legend.updateVis(sharedScaleMax);
+
+    let pieChartData =  formatPieChartData(filterData(null));
+
+    genderDonutChart.updateVis(pieChartData.gender);
+    nationalityDonutChart.updateVis(pieChartData.nationality);
 
 }
 
