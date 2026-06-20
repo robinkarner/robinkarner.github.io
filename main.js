@@ -6,6 +6,7 @@ import ChoroplethMap from "./ChoroplethMap.js";
 import ColorLegend from "./ColorLegend.js";
 import DonutChart from "./DonutChart.js";
 import LineChart from "./LineChart.js"; // neuer Teil
+import JobList from "./JobList.js"; // neu
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 await initDB();
@@ -74,8 +75,8 @@ const nationalityBarChart = new BarChart({
 
 const treeMap = new Treemap({
     parentElement: "#treemap-container",
-    containerWidth: 1300,
-    containerHeight: 450,
+    containerWidth: 1000,
+    containerHeight: 500,
     scaleMaximum: sharedScaleMax,
 }, formattedJobData, dispatcher);
 
@@ -126,6 +127,7 @@ const lineChart = new LineChart({
     parentElement: "#line-chart-container",
     containerWidth: 800,
     containerHeight: 250,
+    colorScaleMax: sharedScaleMax, // neu: gleiche Blau-Skala wie Choropleth/Treemap
 }, {
     allMonths,
     points: computeAverageStayLine(await getLineData(), allMonths),
@@ -134,6 +136,16 @@ const lineChart = new LineChart({
 // ─────────────────────────────────────────────────────────────────────────────
 // ende neuer Teil
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ─── neu: scrollbare Job-Namensliste neben dem Treemap (synchron zum Ausschnitt) ───
+const jobList = new JobList({
+    parentElement: "#job-list-container",
+    colorScaleMax: sharedScaleMax,
+}, {
+    leaves: collectLeaves(formattedJobData).sort((a, b) => (b.balance || 0) - (a.balance || 0)),
+    selectedCode: null,
+}, dispatcher);
+// ─── ende neu ───
 
 dispatcher.on("windowChanged", async windowDates => {
     data = await getData(windowDates.startDate, windowDates.endDate);
@@ -191,6 +203,10 @@ function updateChartData(){
     treeMap.updateVis(treeMapData, sharedScaleMax);
     choroplethMap.updateVis(choroplethData, sharedScaleMax);
     legend.updateVis(sharedScaleMax);
+
+    // ─── neu: Job-Liste synchron zum aktuellen Treemap-Ausschnitt halten ───
+    updateJobList(treeMapData);
+    // ─── ende neu ───
 
     let pieChartData =  formatPieChartData(filterData(null));
 
@@ -586,4 +602,48 @@ async function updateLineChart(){
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // ende neuer Teil
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// neu: Job-Liste – Blätter (Berufe) des aktuellen Treemap-Ausschnitts einsammeln
+// und an die Liste übergeben. treeMap.currentPrefix = aktuelle Treemap-Ebene.
+// ─────────────────────────────────────────────────────────────────────────────
+function updateJobList(jobTree){
+    const currentNode = findNodeByPrefix(jobTree, treeMap.currentPrefix) || jobTree;
+    const leaves = collectLeaves(currentNode).sort((a, b) => (b.balance || 0) - (a.balance || 0));
+    const selectedCode = (filters.job && filters.job.length === 4) ? filters.job : null;
+    jobList.updateVis({leaves, selectedCode});
+}
+
+function findNodeByPrefix(node, prefix){
+    if(!prefix || node.codePrefix === prefix) return node;
+    if(!node.children) return null;
+
+    for(const child of node.children){
+        const found = findNodeByPrefix(child, prefix);
+        if(found) return found;
+    }
+
+    return null;
+}
+
+function collectLeaves(node, acc = []){
+    if(node.code){
+        acc.push({
+            code: node.code,
+            name: node.label || node.name,
+            averageStay: node.averageStay,
+            balance: node.balance
+        });
+        return acc;
+    }
+
+    if(node.children){
+        for(const child of node.children) collectLeaves(child, acc);
+    }
+
+    return acc;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+// ende neu
 // ─────────────────────────────────────────────────────────────────────────────

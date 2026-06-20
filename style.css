@@ -9,3 +9,56 @@ rect.selected {
     flex-wrap: wrap;
 }
 
+/* neu: scrollbare Job-Namensliste neben dem Treemap */
+.job-list {
+    width: 280px;
+    height: 500px; /* gleiche Höhe wie der Treemap-Container */
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.job-list-search {
+    margin: 4px;
+    padding: 3px 6px;
+    font-size: 12px;
+    box-sizing: border-box;
+}
+
+.job-list-items {
+    flex: 1 1 auto;
+    overflow-y: auto; /* nur die Liste scrollt, das Suchfeld bleibt oben */
+}
+
+.job-list-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.job-list-row:hover {
+    background: #f0f0f0;
+}
+
+.job-list-row.selected {
+    background: #ffd6d6; /* rötlich, passend zum Selektions-Stil */
+}
+
+.job-list-dot {
+    flex: 0 0 auto;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 1px solid #888;
+}
+
+.job-list-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
