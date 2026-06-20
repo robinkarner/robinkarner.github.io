@@ -2,17 +2,30 @@ import { initDB, query } from "./db.js";
 import Histogram from "./Histogram.js";
 import BarChart from "./BarChart.js";
 import Treemap from "./Treemap.js";
+import ChoroplethMap from "./ChoroplethMap.js";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 await initDB();
 
-const charts = [];
+const topoData = await d3.json("./data/austria_topo.json");
 
 let filters = {
     gender: null,
     nationality: null,
     job: null,
     state: null
+}
+
+const stateByDigit = {
+    1: "Burgenland",
+    2: "Kärnten",
+    3: "Niederösterreich",
+    4: "Oberösterreich",
+    5: "Salzburg",
+    6: "Steiermark",
+    7: "Tirol",
+    8: "Vorarlberg",
+    9: "Wien"
 }
 
 const dispatcher = d3.dispatch("windowChanged", "filtersChanged");
@@ -31,6 +44,9 @@ let data = await getData("2025-06", "2026-05");
 
 let formattedBarChartData = formatBarChartData(data);
 let formattedJobData = formatJobData(data);
+let formattedChoroplethData = formatChoroplethData(data);
+
+let sharedScaleMax = getSharedScaleMax(formattedJobData, formattedChoroplethData);
 
 const genderBarChart = new BarChart({
     parentElement: "#gender-bar-chart-container",
@@ -41,7 +57,6 @@ const genderBarChart = new BarChart({
     {demographic: "female", value: formattedBarChartData.gender.female.averageStay}
 ], dispatcher);
 
-charts.push(genderBarChart);
 
 const nationalityBarChart = new BarChart({
     parentElement: "#nationality-bar-chart-container",
@@ -52,19 +67,25 @@ const nationalityBarChart = new BarChart({
     {demographic: "non-citizens", value: formattedBarChartData.nationality.nonCitizens.averageStay}
 ], dispatcher);
 
-charts.push(nationalityBarChart);
 
 const treeMap = new Treemap({
     parentElement: "#treemap-container",
     containerWidth: 600,
     containerHeight: 400,
+    scaleMaximum: sharedScaleMax,
 }, formattedJobData, dispatcher);
 
-charts.push(treeMap);
 
 document.querySelector("#zoom-out").addEventListener("click", () => {
     treeMap.zoomOut();
 });
+
+const choroplethMap = new ChoroplethMap({
+    parentElement: "#choropleth-container",
+    containerWidth: 600,
+    containerHeight: 400,
+    scaleMaximum: sharedScaleMax,
+}, topoData, formattedChoroplethData, dispatcher);
 
 dispatcher.on("windowChanged", async windowDates => {
     data = await getData(windowDates.startDate, windowDates.endDate);
@@ -106,8 +127,12 @@ function updateChartData(){
     ]);
 
     let treeMapData = formatJobData(filterData("job"));
+    let choroplethData = formatChoroplethData(filterData("state"));
 
-    treeMap.updateVis(treeMapData);
+    let sharedScaleMax = getSharedScaleMax(treeMapData, choroplethData);
+
+    treeMap.updateVis(treeMapData, sharedScaleMax);
+    choroplethMap.updateVis(choroplethData, sharedScaleMax);
 
 }
 
@@ -115,6 +140,7 @@ async function getData(startDate, endDate) {
     let data = await query(`
         SELECT GESCHLECHT                      AS gender,
                NATIONALITAET                   AS nationality,
+               CAST(RGSCODE AS INTEGER)        AS location_code,
                CAST(BERUFS4STELLER AS INTEGER) AS job_number,
                BERUFS4STELLERBEZ               AS job_string,
                CAST(SUM(ZUGANG) AS INTEGER)    AS sum_entries,
@@ -125,15 +151,20 @@ async function getData(startDate, endDate) {
           AND STRFTIME(CAST(DATUM as DATE), '%Y-%m') <= '${endDate}'
         GROUP BY GESCHLECHT,
                  NATIONALITAET,
+                 RGSCODE,
                  BERUFS4STELLER,
                  BERUFS4STELLERBEZ
         ORDER BY GESCHLECHT,
                  NATIONALITAET,
+                 RGSCODE,
                  BERUFS4STELLER,
                  BERUFS4STELLERBEZ;
     `);
 
-    return data;
+    return data.map(d => ({
+        ...d,
+        state: getStateFromRGSCode(d.location_code)
+    }));
 }
 
 function filterData(omit){
@@ -157,7 +188,9 @@ function filterData(omit){
             }
         }
         if(!(omit === "state") && filters.state){
-            //TODO
+            if(dataPoint.state !== filters.state){
+                continue;
+            }
         }
 
         filteredData.push(dataPoint);
@@ -232,7 +265,8 @@ function formatBarChartData(data) {
 }
 
 function getAverageStay(demographicData){
-    return demographicData.balance / ((demographicData.entries + demographicData.departures) * 0.5);
+    const denominator = (demographicData.entries + demographicData.departures) * 0.5;
+    return denominator > 0 ? demographicData.balance / denominator : 0;
 }
 
 function formatJobData(data){
@@ -327,4 +361,62 @@ function formatJobData(data){
 
     return finalize(root);
 
+}
+
+function getStateFromRGSCode(RGSCode){
+    const digit = String(RGSCode)[0];
+    return stateByDigit[digit] ?? null;
+}
+
+function formatChoroplethData(data){
+    let formattedData = new Map();
+
+    for(let dataPoint of data){
+        if(!formattedData.has(dataPoint.state)){
+            formattedData.set(dataPoint.state, {
+                entries: 0,
+                departures: 0,
+                balance: 0,
+                averageStay: 0
+            });
+        }
+
+        const stateData = formattedData.get(dataPoint.state);
+
+        stateData.entries += dataPoint.sum_entries;
+        stateData.departures += dataPoint.sum_departures;
+        stateData.balance += dataPoint.sum_balance;
+    }
+
+    formattedData.forEach(d => {
+        d.averageStay = getAverageStay(d);
+    });
+
+    return formattedData;
+}
+
+function getSharedScaleMax(jobData, stateData){
+    let stateValues = Array.from(stateData.values(), d => d.averageStay);
+
+    function collectValuesFromTree(node, values = []){
+        if(node.averageStay != null) {
+            values.push(node.averageStay);
+        }
+
+        if(node.children){
+            for(const child of node.children){
+                collectValuesFromTree(child, values);
+            }
+        }
+
+        return values;
+    }
+
+    let jobValues = collectValuesFromTree(jobData);
+
+    const allValues = [...jobValues, ...stateValues]
+        .filter(v => Number.isFinite(v))
+        .sort(d3.ascending);
+
+    return d3.quantile(allValues, 0.95) ?? d3.max(allValues) ?? 1;
 }

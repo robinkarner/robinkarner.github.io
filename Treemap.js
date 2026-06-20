@@ -6,6 +6,7 @@ export default class Treemap {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth,
             containerHeight: _config.containerHeight,
+            scaleMaximum: _config.scaleMaximum,
             margin: {top: 30, bottom: 30, left: 15, right: 15}
         };
 
@@ -36,8 +37,8 @@ export default class Treemap {
         vis.leafLayer = vis.svg.append("g");
         vis.branchLayer = vis.svg.append("g");
 
-        vis.colorScale = d3.scaleLinear()
-            .range([0.2, 1]);
+        vis.colorScale = d3.scaleSequential()
+            .interpolator(d3.interpolateBlues);
 
         vis.renderVis(vis.currentNode);
     }
@@ -54,13 +55,13 @@ export default class Treemap {
         d3.treemap()
             .tile(d3.treemapSquarify)
             .size([vis.width, vis.height])
-            .paddingInner(2)
+            .paddingInner(0.5)
             .round(true)(root);
 
         const leaves = root.leaves();
         const branches = (root.children || []);
 
-        vis.colorScale.domain(d3.extent(leaves, d => d.data.averageStay || 0));
+        vis.colorScale.domain([0, vis.config.scaleMaximum]);
 
         vis.renderLeaves(leaves);
         vis.renderBranches(branches);
@@ -81,7 +82,7 @@ export default class Treemap {
                     .attr("height", d => Math.max(0, d.y1 - d.y0))
                     .attr("fill", "transparent")
                     .attr("stroke", "black")
-                    .attr("stroke-opacity", 0.5)
+                    .attr("stroke-opacity", 1)
                     .attr("stroke-width", 1)
                     .style("pointer-events", "all")
                     .style("cursor", "zoom-in")
@@ -142,8 +143,8 @@ export default class Treemap {
             .ease(d3.easeCubicInOut)
             .attr("width", d => Math.max(0, d.x1 - d.x0))
             .attr("height", d => Math.max(0, d.y1 - d.y0))
-            .attr("fill", "#0f766e")
-            .attr("fill-opacity", d => vis.colorScale(d.data.averageStay || 0))
+            .attr("fill", d => vis.colorScale(d.data.averageStay || 0))
+            //.attr("fill-opacity", d => vis.colorScale(d.data.averageStay || 0))
             .attr("stroke", "#fff");
 
         leaf.select("clipPath rect")
@@ -211,11 +212,13 @@ export default class Treemap {
         return text.slice(0, Math.max(0, maxChars - 1)) + "…";
     }
 
-    updateVis(newData){
+    updateVis(newData, newScaleMaximum) {
 
         let vis = this;
 
         vis.data = newData;
+
+        vis.config.scaleMaximum = newScaleMaximum;
 
         const nodeToRender = vis.findNodeByPrefix(vis.data, vis.currentPrefix) || vis.data;
 
