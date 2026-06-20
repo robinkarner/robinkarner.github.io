@@ -3,6 +3,7 @@ import Histogram from "./Histogram.js";
 import BarChart from "./BarChart.js";
 import Treemap from "./Treemap.js";
 import ChoroplethMap from "./ChoroplethMap.js";
+import ColorLegend from "./ColorLegend.js";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 await initDB();
@@ -87,6 +88,12 @@ const choroplethMap = new ChoroplethMap({
     scaleMaximum: sharedScaleMax,
 }, topoData, formattedChoroplethData, dispatcher);
 
+const legend = new ColorLegend({
+    parentElement: "#legend-container",
+    containerWidth: 70,
+    containerHeight: 300
+}, sharedScaleMax);
+
 dispatcher.on("windowChanged", async windowDates => {
     data = await getData(windowDates.startDate, windowDates.endDate);
 
@@ -133,6 +140,7 @@ function updateChartData(){
 
     treeMap.updateVis(treeMapData, sharedScaleMax);
     choroplethMap.updateVis(choroplethData, sharedScaleMax);
+    legend.updateVis(sharedScaleMax);
 
 }
 
@@ -262,6 +270,31 @@ function formatBarChartData(data) {
     barChartData.nationality.nonCitizens.averageStay = getAverageStay(barChartData.nationality.nonCitizens);
 
     return barChartData;
+}
+
+function formatPieChartData(data) {
+    return {
+        gender: [
+            {
+                label: "male",
+                value: d3.sum(data.filter(d => d.gender === "M"), d => d.sum_balance)
+            },
+            {
+                label: "female",
+                value: d3.sum(data.filter(d => d.gender !== "M"), d => d.sum_balance)
+            }
+        ],
+        nationality: [
+            {
+                label: "citizens",
+                value: d3.sum(data.filter(d => d.nationality === "Inländer_innen"), d => d.sum_balance)
+            },
+            {
+                label: "non-citizens",
+                value: d3.sum(data.filter(d => d.nationality !== "Inländer_innen"), d => d.sum_balance)
+            }
+        ]
+    };
 }
 
 function getAverageStay(demographicData){

@@ -93,7 +93,7 @@ export default class ChoroplethMap {
             .attr("class", "state-border")
             .attr("d", vis.geoPath)
             .attr("fill", "none")
-            .attr("stroke", "grey")
+            .attr("stroke", "black")
             .attr("stroke-width", 1);
     }
 
