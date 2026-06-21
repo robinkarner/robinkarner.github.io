@@ -1,3 +1,130 @@
 rect.selected {
     fill: red;
 }
+
+.default-row {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.config-section,
+.analysis-section {
+    box-sizing: border-box;
+    width: fit-content;
+    max-width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.config-section   { background: #e7e9ef; }
+.analysis-section { background: #dbe8f7; }
+
+.section-title {
+    margin: 0 0 6px;
+    font: 600 13px/1.4 sans-serif;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: #555;
+}
+
+.config-section .default-row:last-child,
+.analysis-section .default-row:last-child {
+    margin-bottom: 0;
+}
+
+.default-row.treemap-row {
+    align-items: flex-end;
+}
+
+
+.treemap-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.treemap-card svg { display: block; }
+
+#zoom-out {
+    font-size: 12px;
+    padding: 4px 10px;
+    cursor: pointer;
+}
+
+.no-data {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 1300px;
+    max-width: 100%;
+    height: 250px;
+    font: 600 16px sans-serif;
+    letter-spacing: .05em;
+    color: #888;
+}
+
+.analysis-section.empty .default-row { display: none; }
+.analysis-section.empty .no-data    { display: flex; }
+
+.analysis-note {
+    margin: 0 0 6px;
+    font: 12px sans-serif;
+    color: #6a6a6a;
+}
+.analysis-note:empty { display: none; }
+
+.job-list {
+    width: 290px;
+    height: 350px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    background: #fff;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.job-list-search {
+    margin: 4px;
+    padding: 3px 6px;
+    font-size: 12px;
+    box-sizing: border-box;
+}
+
+.job-list-items {
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+
+.job-list-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 6px;
+    white-space: nowrap;
+}
+
+.job-list-dot {
+    flex: 0 0 auto;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 1px solid #888;
+    cursor: pointer;
+}
+
+.job-list-dot:hover {
+    border-color: #000;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+}
+
+.job-list-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+

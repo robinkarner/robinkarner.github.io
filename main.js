@@ -41,8 +41,8 @@ let unemployedPerMonth = await query(`SELECT STRFTIME(CAST(Datum AS DATE), '%Y-%
 
 const timeline = new Histogram({
     parentElement: "#timeline-chart-container",
-    containerWidth: 1000,
-    containerHeight: 100,
+    containerWidth: 1300,
+    containerHeight: 150,
 }, unemployedPerMonth, dispatcher);
 
 let data = await getData("2025-06", "2026-05");
@@ -76,20 +76,20 @@ const nationalityBarChart = new BarChart({
 
 const treeMap = new Treemap({
     parentElement: "#treemap-container",
-    containerWidth: 600,
-    containerHeight: 400,
+    containerWidth: 1000,
+    containerHeight: 350,
     scaleMaximum: sharedScaleMax,
 }, formattedJobData, dispatcher);
 
 
 document.querySelector("#zoom-out").addEventListener("click", () => {
-    treeMap.zoomOut();
+    treeMap.hierarchyUp();
 });
 
 const choroplethMap = new ChoroplethMap({
     parentElement: "#choropleth-container",
     containerWidth: 600,
-    containerHeight: 400,
+    containerHeight: 300,
     scaleMaximum: sharedScaleMax,
 }, topoData, formattedChoroplethData, dispatcher);
 
@@ -101,14 +101,14 @@ const legend = new ColorLegend({
 
 const genderDonutChart = new DonutChart({
     parentElement: "#gender-donut-container",
-    containerWidth: 300,
-    containerHeight: 300,
+    containerWidth: 240,
+    containerHeight: 240,
 }, formattedPieChartData.gender);
 
 const nationalityDonutChart = new DonutChart({
     parentElement: "#nationality-donut-container",
-    containerWidth: 300,
-    containerHeight: 300,
+    containerWidth: 240,
+    containerHeight: 240,
 }, formattedPieChartData.nationality);
 
 const allMonths = unemployedPerMonth.map(d => d.month);
@@ -569,6 +569,7 @@ async function updateLineChart(){
     if(requestId !== lineChartRequestId) return;
 
     const hasData = d3.sum(monthlyRows, r => (r.entries || 0) + (r.departures || 0)) > 0;
+    document.querySelector(".analysis-section").classList.toggle("empty", !hasData);
     if(!hasData) return;
 
     const points = computeAverageStayLine(monthlyRows, allMonths);
