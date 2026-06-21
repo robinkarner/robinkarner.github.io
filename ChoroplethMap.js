@@ -54,7 +54,7 @@ export default class ChoroplethMap {
         let vis = this;
 
         vis.states.forEach(d => {
-            d.properties.value = (vis.data.get(d.properties.name)).averageStay ?? 0;
+            d.properties.value = vis.data.get(d.properties.name)?.averageStay ?? 0;
         });
 
         vis.colorScale.domain([0, vis.config.scaleMaximum]);

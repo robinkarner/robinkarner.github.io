@@ -115,7 +115,6 @@ export default class LineChart {
         vis.topLine
             .datum(vis.points)
             .attr("d", vis.line);
-        // ─── ende neu ───
 
         vis.renderMarker();
     }

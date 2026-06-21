@@ -71,13 +71,6 @@ rect.selected {
 .analysis-section.empty .default-row { display: none; }
 .analysis-section.empty .no-data    { display: flex; }
 
-.analysis-note {
-    margin: 0 0 6px;
-    font: 12px sans-serif;
-    color: #6a6a6a;
-}
-.analysis-note:empty { display: none; }
-
 .job-list {
     width: 290px;
     height: 350px;
