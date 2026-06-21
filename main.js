@@ -6,6 +6,7 @@ import ChoroplethMap from "./ChoroplethMap.js";
 import ColorLegend from "./ColorLegend.js";
 import DonutChart from "./DonutChart.js";
 import LineChart from "./LineChart.js";
+import JobList from "./JobList.js";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 
@@ -129,6 +130,14 @@ const lineChart = new LineChart({
     markerMonth: currentWindowEnd
 });
 
+const jobList = new JobList({
+    parentElement: "#job-list-container",
+    colorScaleMax: sharedScaleMax,
+    onNavigate: (code) => treeMap.navigateTo(code),
+}, {
+    leaves: collectLeaves(formattedJobData).sort((a, b) => (b.balance || 0) - (a.balance || 0)),
+}, dispatcher);
+
 
 dispatcher.on("windowChanged", async windowDates => {
     data = await getData(windowDates.startDate, windowDates.endDate);
@@ -178,6 +187,7 @@ function updateChartData(){
     treeMap.updateVis(treeMapData, sharedScaleMax);
     choroplethMap.updateVis(choroplethData, sharedScaleMax);
     legend.updateVis(sharedScaleMax);
+    updateJobList(treeMapData);
 
     let pieChartData =  formatPieChartData(filterData(null));
 
@@ -563,4 +573,41 @@ async function updateLineChart(){
 
     const points = computeAverageStayLine(monthlyRows, allMonths);
     lineChart.updateVis({points, markerMonth: currentWindowEnd});
+}
+
+function updateJobList(jobTree){
+    let node = findNodeByPrefix(jobTree, treeMap.currentPrefix);
+    if(node && node.code){
+        node = findNodeByPrefix(jobTree, treeMap.currentPrefix.slice(0, -1)) || jobTree;
+    }
+    const currentNode = node || jobTree;
+    const leaves = collectLeaves(currentNode).sort((a, b) => (b.balance || 0) - (a.balance || 0));
+    jobList.updateVis({leaves});
+}
+
+function findNodeByPrefix(node, prefix){
+    if(!prefix || node.codePrefix === prefix) return node;
+    if(!node.children) return null;
+
+    for(const child of node.children){
+        const found = findNodeByPrefix(child, prefix);
+        if(found) return found;
+    }
+    return null;
+}
+
+function collectLeaves(node, acc = []){
+    if(node.code){
+        acc.push({
+            code: node.code,
+            name: node.label || node.name,
+            averageStay: node.averageStay,
+            balance: node.balance
+        });
+        return acc;
+    }
+    if(node.children){
+        for(const child of node.children) collectLeaves(child, acc);
+    }
+    return acc;
 }

@@ -236,4 +236,10 @@ export default class Treemap {
 
         return null;
     }
+
+    navigateTo(prefix){
+        let vis = this;
+        vis.currentPrefix = prefix || "";
+        vis.dispatcher.call("filtersChanged", null, {filter: "job", value: vis.currentPrefix});
+    }
 }
