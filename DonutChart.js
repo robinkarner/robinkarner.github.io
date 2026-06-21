@@ -44,6 +44,13 @@ export default class DonutChart {
     renderVis() {
         let vis = this;
 
+        const total = d3.sum(vis.data, d => d.value);
+        if(!(total > 0)){
+            vis.svg.selectAll(".arc").remove();
+            vis.svg.selectAll(".arc-label").remove();
+            return;
+        }
+
         const arcs = vis.pie(vis.data);
 
         vis.svg.selectAll(".arc")

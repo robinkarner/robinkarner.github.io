@@ -7,31 +7,40 @@
 </head>
 <body>
 
+<section class="config-section">
+    <h2 class="section-title">Konfiguration</h2>
+
     <div id="timeline-chart-container"></div>
 
     <div class="default-row">
-            <div id="gender-bar-chart-container"></div>
-            <div id="nationality-bar-chart-container"></div>
+        <div id="gender-bar-chart-container"></div>
+        <div id="nationality-bar-chart-container"></div>
 
-            <div id="choropleth-container"></div>
-            <div id="legend-container"></div>
+        <div id="choropleth-container"></div>
+        <div id="legend-container"></div>
     </div>
 
-    <div class="default-row">
-        <div>
-            <button id="zoom-out">Back</button>
+    <div class="default-row treemap-row">
+        <div class="treemap-card">
+            <button id="zoom-out">Hierarchy up</button>
             <div id="treemap-container"></div>
         </div>
 
         <div id="job-list-container"></div>
     </div>
+</section>
+
+<section class="analysis-section">
+    <h2 class="section-title">Analyse</h2>
+    <div class="no-data">No Data</div>
 
     <div class="default-row">
         <div id="line-chart-container"></div>
         <div id="gender-donut-container"></div>
         <div id="nationality-donut-container"></div>
     </div>
+</section>
 
-    <script type="module" src="main.js"></script>
+<script type="module" src="main.js"></script>
 </body>
 </html>

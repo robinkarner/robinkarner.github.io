@@ -5,9 +5,10 @@ import Treemap from "./Treemap.js";
 import ChoroplethMap from "./ChoroplethMap.js";
 import ColorLegend from "./ColorLegend.js";
 import DonutChart from "./DonutChart.js";
-import LineChart from "./LineChart.js"; // neuer Teil
-import JobList from "./JobList.js"; // neu
+import LineChart from "./LineChart.js";
+import JobList from "./JobList.js";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
 
 await initDB();
 
@@ -76,13 +77,13 @@ const nationalityBarChart = new BarChart({
 const treeMap = new Treemap({
     parentElement: "#treemap-container",
     containerWidth: 1000,
-    containerHeight: 500,
+    containerHeight: 350,
     scaleMaximum: sharedScaleMax,
 }, formattedJobData, dispatcher);
 
 
 document.querySelector("#zoom-out").addEventListener("click", () => {
-    treeMap.zoomOut();
+    treeMap.hierarchyUp();
 });
 
 const choroplethMap = new ChoroplethMap({
@@ -100,63 +101,50 @@ const legend = new ColorLegend({
 
 const genderDonutChart = new DonutChart({
     parentElement: "#gender-donut-container",
-    containerWidth: 250,
-    containerHeight: 250,
+    containerWidth: 240,
+    containerHeight: 240,
 }, formattedPieChartData.gender);
 
 const nationalityDonutChart = new DonutChart({
     parentElement: "#nationality-donut-container",
-    containerWidth: 250,
-    containerHeight: 250,
+    containerWidth: 240,
+    containerHeight: 240,
 }, formattedPieChartData.nationality);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// neuer Teil: Line Chart (durchschnittliche Verweildauer über den Gesamtzeitraum)
-// ─────────────────────────────────────────────────────────────────────────────
 const allMonths = unemployedPerMonth.map(d => d.month);
 
-// Umkehrung von stateByDigit, damit ein ausgewähltes Bundesland in den SQL-Filter passt
 const digitByState = Object.fromEntries(
     Object.entries(stateByDigit).map(([digit, name]) => [name, digit])
 );
 
-// Startmonat des aktuell am Slider ausgewählten 12-Monats-Fensters (= markierter Punkt)
-let currentWindowStart = allMonths[allMonths.length - 12];
+let currentWindowEnd = allMonths[allMonths.length - 1];
 
 const lineChart = new LineChart({
     parentElement: "#line-chart-container",
     containerWidth: 800,
     containerHeight: 250,
-    colorScaleMax: sharedScaleMax, // neu: gleiche Blau-Skala wie Choropleth/Treemap
+    colorScaleMax: sharedScaleMax,
 }, {
     allMonths,
     points: computeAverageStayLine(await getLineData(), allMonths),
-    markerMonth: currentWindowStart
+    markerMonth: currentWindowEnd
 });
-// ─────────────────────────────────────────────────────────────────────────────
-// ende neuer Teil
-// ─────────────────────────────────────────────────────────────────────────────
 
-// ─── neu: scrollbare Job-Namensliste neben dem Treemap (synchron zum Ausschnitt) ───
 const jobList = new JobList({
     parentElement: "#job-list-container",
     colorScaleMax: sharedScaleMax,
+    onNavigate: (code) => treeMap.navigateTo(code),
 }, {
     leaves: collectLeaves(formattedJobData).sort((a, b) => (b.balance || 0) - (a.balance || 0)),
-    selectedCode: null,
 }, dispatcher);
-// ─── ende neu ───
+
 
 dispatcher.on("windowChanged", async windowDates => {
     data = await getData(windowDates.startDate, windowDates.endDate);
 
     updateChartData();
-
-    // ─── neuer Teil: markierten Punkt auf das neue Fenster setzen ───
-    currentWindowStart = windowDates.startDate;
-    lineChart.updateMarker(currentWindowStart);
-    // ─── ende neuer Teil ───
-
+    currentWindowEnd = windowDates.endDate;
+    lineChart.updateMarker(currentWindowEnd);
 });
 
 dispatcher.on("filtersChanged", filterUpdate => {
@@ -172,11 +160,7 @@ dispatcher.on("filtersChanged", filterUpdate => {
     }
 
     updateChartData();
-
-    // ─── neuer Teil: Line Chart an die geänderten Filter anpassen ───
     updateLineChart();
-    // ─── ende neuer Teil ───
-
 });
 
 function updateChartData(){
@@ -203,10 +187,7 @@ function updateChartData(){
     treeMap.updateVis(treeMapData, sharedScaleMax);
     choroplethMap.updateVis(choroplethData, sharedScaleMax);
     legend.updateVis(sharedScaleMax);
-
-    // ─── neu: Job-Liste synchron zum aktuellen Treemap-Ausschnitt halten ───
     updateJobList(treeMapData);
-    // ─── ende neu ───
 
     let pieChartData =  formatPieChartData(filterData(null));
 
@@ -525,18 +506,6 @@ function getSharedScaleMax(jobData, stateData){
     return d3.quantile(allValues, 0.95) ?? d3.max(allValues) ?? 1;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// neuer Teil: Daten + Berechnung für den Line Chart
-//
-// getLineData()             holt pro Monat die Summen (entries/balance/departures)
-//                           für die aktuell aktiven Filter (Gender, Nationality,
-//                           Bundesland und Beruf/Treemap-Auswahl).
-// computeAverageStayLine()  bildet daraus rollierende 12-Monats-Fenster und
-//                           berechnet je Fenster die durchschnittliche Verweildauer.
-//                           Punkte sitzen am Startmonat ihres Fensters; an den
-//                           Rändern fehlen Werte, weil ein volles Jahr nötig ist.
-// updateLineChart()         lädt + berechnet neu und aktualisiert den Chart.
-// ─────────────────────────────────────────────────────────────────────────────
 async function getLineData(){
     let conditions = [];
 
@@ -562,7 +531,6 @@ async function getLineData(){
 function computeAverageStayLine(monthlyRows, months, windowSize = 12){
     const byMonth = new Map(monthlyRows.map(row => [row.month, row]));
 
-    // an alle Monate ausrichten, damit die Fenster echte 12 Kalendermonate umfassen
     const series = months.map(month => {
         const row = byMonth.get(month);
         return {
@@ -577,7 +545,6 @@ function computeAverageStayLine(monthlyRows, months, windowSize = 12){
 
     for(let i = 0; i + windowSize <= series.length; i++){
         let entries = 0, balance = 0, departures = 0;
-
         for(let j = i; j < i + windowSize; j++){
             entries    += series[j].entries;
             balance    += series[j].balance;
@@ -585,9 +552,8 @@ function computeAverageStayLine(monthlyRows, months, windowSize = 12){
         }
 
         const denominator = (entries + departures) * 0.5;
-
         points.push({
-            month: series[i].month,
+            month: series[i + windowSize - 1].month,
             averageStay: denominator > 0 ? balance / denominator : 0
         });
     }
@@ -595,24 +561,29 @@ function computeAverageStayLine(monthlyRows, months, windowSize = 12){
     return points;
 }
 
-async function updateLineChart(){
-    const monthlyRows = await getLineData();
-    const points = computeAverageStayLine(monthlyRows, allMonths);
-    lineChart.updateVis({points, markerMonth: currentWindowStart});
-}
-// ─────────────────────────────────────────────────────────────────────────────
-// ende neuer Teil
-// ─────────────────────────────────────────────────────────────────────────────
+let lineChartRequestId = 0;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// neu: Job-Liste – Blätter (Berufe) des aktuellen Treemap-Ausschnitts einsammeln
-// und an die Liste übergeben. treeMap.currentPrefix = aktuelle Treemap-Ebene.
-// ─────────────────────────────────────────────────────────────────────────────
+async function updateLineChart(){
+    const requestId = ++lineChartRequestId;
+    const monthlyRows = await getLineData();
+    if(requestId !== lineChartRequestId) return;
+
+    const hasData = d3.sum(monthlyRows, r => (r.entries || 0) + (r.departures || 0)) > 0;
+    document.querySelector(".analysis-section").classList.toggle("empty", !hasData);
+    if(!hasData) return;
+
+    const points = computeAverageStayLine(monthlyRows, allMonths);
+    lineChart.updateVis({points, markerMonth: currentWindowEnd});
+}
+
 function updateJobList(jobTree){
-    const currentNode = findNodeByPrefix(jobTree, treeMap.currentPrefix) || jobTree;
+    let node = findNodeByPrefix(jobTree, treeMap.currentPrefix);
+    if(node && node.code){
+        node = findNodeByPrefix(jobTree, treeMap.currentPrefix.slice(0, -1)) || jobTree;
+    }
+    const currentNode = node || jobTree;
     const leaves = collectLeaves(currentNode).sort((a, b) => (b.balance || 0) - (a.balance || 0));
-    const selectedCode = (filters.job && filters.job.length === 4) ? filters.job : null;
-    jobList.updateVis({leaves, selectedCode});
+    jobList.updateVis({leaves});
 }
 
 function findNodeByPrefix(node, prefix){
@@ -623,7 +594,6 @@ function findNodeByPrefix(node, prefix){
         const found = findNodeByPrefix(child, prefix);
         if(found) return found;
     }
-
     return null;
 }
 
@@ -637,13 +607,8 @@ function collectLeaves(node, acc = []){
         });
         return acc;
     }
-
     if(node.children){
         for(const child of node.children) collectLeaves(child, acc);
     }
-
     return acc;
 }
-// ─────────────────────────────────────────────────────────────────────────────
-// ende neu
-// ─────────────────────────────────────────────────────────────────────────────

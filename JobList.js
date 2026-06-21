@@ -1,17 +1,14 @@
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-// Einfache, scrollbare Namensliste der Berufe, die gerade im Treemap-Ausschnitt liegen.
-// Synchron zum Treemap (von außen via updateVis gefüttert). Klick auf eine Zeile macht
-// dasselbe wie die Auswahl der zugehörigen Treemap-Kachel: feuert den Job-Filter.
 export default class JobList {
     constructor(_config, data, dispatcher) {
         this.config = {
             parentElement: _config.parentElement,
-            colorScaleMax: _config.colorScaleMax, // gleiche Blau-Skala wie Treemap/Choropleth
+            colorScaleMax: _config.colorScaleMax,
+            onNavigate: _config.onNavigate,
         };
 
-        this.leaves = data.leaves;                 // [{code, name, averageStay, balance}]
-        this.selectedCode = data.selectedCode ?? null;
+        this.leaves = data.leaves;
 
         this.dispatcher = dispatcher;
 
@@ -29,13 +26,12 @@ export default class JobList {
         vis.container = d3.select(vis.config.parentElement)
             .classed("job-list", true);
 
-        // lokales Suchfeld: filtert nur diese Liste (kein Dispatcher, keine Wechselwirkung)
         vis.container.append("input")
             .attr("type", "search")
             .attr("class", "job-list-search")
-            .attr("placeholder", "Suche…")
+            .attr("placeholder", "Suche… (* = beliebig)")
             .on("input", function () {
-                vis.searchTerm = this.value.toLowerCase();
+                vis.searchTerm = this.value;
                 vis.renderVis();
             });
 
@@ -48,24 +44,28 @@ export default class JobList {
     renderVis() {
         let vis = this;
 
-        // lokaler Suchfilter über die Namen
-        const shown = vis.searchTerm
-            ? vis.leaves.filter(d => (d.name || "").toLowerCase().includes(vis.searchTerm))
-            : vis.leaves;
+        const term = (vis.searchTerm || "").trim();
+        let shown = vis.leaves;
+        if (term) {
+            const regex = vis.buildSearchRegex(term);
+            shown = vis.leaves.filter(d => regex.test(d.name || ""));
+        }
 
         vis.list.selectAll("div.job-list-row")
             .data(shown, d => d.code)
             .join(
                 enter => {
                     const row = enter.append("div")
-                        .attr("class", "job-list-row")
+                        .attr("class", "job-list-row");
+
+                    row.append("span")
+                        .attr("class", "job-list-dot")
+                        .attr("title", "Im Treemap anzeigen")
                         .on("click", (event, d) => {
-                            // Toggle: gleiche Kachel nochmal -> Auswahl aufheben
-                            const value = vis.selectedCode === d.code ? null : d.code;
-                            vis.dispatcher.call("filtersChanged", event, {filter: "job", value});
+                            event.stopPropagation();
+                            if (vis.config.onNavigate) vis.config.onNavigate(d.code);
                         });
 
-                    row.append("span").attr("class", "job-list-dot");
                     row.append("span").attr("class", "job-list-name");
 
                     return row;
@@ -73,8 +73,8 @@ export default class JobList {
                 update => update,
                 exit => exit.remove()
             )
+            .order()
             .attr("title", d => d.name)
-            .classed("selected", d => d.code === vis.selectedCode)
             .each(function (d) {
                 const row = d3.select(this);
                 row.select(".job-list-dot").style("background-color", vis.colorScale(d.averageStay || 0));
@@ -82,14 +82,16 @@ export default class JobList {
             });
     }
 
+    buildSearchRegex(term){
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const pattern = escaped.replace(/\\\*/g, ".*");
+        return new RegExp(pattern, "i");
+    }
+
     updateVis(data) {
         let vis = this;
 
         vis.leaves = data.leaves;
-
-        if (data.selectedCode !== undefined) {
-            vis.selectedCode = data.selectedCode;
-        }
 
         vis.renderVis();
     }

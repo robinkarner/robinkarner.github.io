@@ -6,15 +6,12 @@ export default class LineChart {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth,
             containerHeight: _config.containerHeight,
-            colorScaleMax: _config.colorScaleMax, // neu: Max der Farbskala (wie Choropleth)
+            colorScaleMax: _config.colorScaleMax,
             margin: {top: 25, bottom: 20, right: 50, left: 50}
         }
 
-        // full month domain (same as the timeline) so the x-axis matches the slider
         this.allMonths = data.allMonths;
-        // [{month, averageStay}] – one point per rolling 12-month window
         this.points = data.points;
-        // start month of the currently selected window -> highlighted point
         this.markerMonth = data.markerMonth;
 
         this.initVis();
@@ -29,7 +26,7 @@ export default class LineChart {
         vis.svg = d3.select(vis.config.parentElement).append("svg")
             .attr("width", vis.config.containerWidth)
             .attr("height", vis.config.containerHeight)
-        .append("g")
+            .append("g")
             .attr("transform", `translate(${vis.config.margin.left}, ${vis.config.margin.top})`);
 
         vis.xScale = d3.scalePoint()
@@ -60,11 +57,9 @@ export default class LineChart {
             .attr("fill", "#555")
             .text("⌀ Verweildauer (Monate) – 12-Monats-Verlauf");
 
-        // ─── neu: Farbskala identisch zur Choropleth-Karte (interpolateBlues), fixe Domain ───
         vis.colorScale = d3.scaleSequential(d3.interpolateBlues)
             .domain([0, vis.config.colorScaleMax || 1]);
 
-        // Fläche unter der Linie (segmentweise nach Verweildauer eingefärbt) + dünne Konturlinie
         vis.areaLayer = vis.svg.append("g");
 
         vis.line = d3.line()
@@ -75,9 +70,7 @@ export default class LineChart {
             .attr("fill", "none")
             .attr("stroke", "#08306b")
             .attr("stroke-width", 1);
-        // ─── ende neu ───
 
-        // marker for the currently selected window (matches the slider's red selection)
         vis.markerLine = vis.svg.append("line")
             .attr("stroke", "red")
             .attr("stroke-width", 1)
@@ -105,7 +98,6 @@ export default class LineChart {
         vis.xAxisGroup.call(vis.xAxis);
         vis.yAxisGroup.call(vis.yAxis);
 
-        // ─── neu: Fläche unter der Linie segmentweise einfärben (Farbe = Verweildauer) ───
         const baseY = vis.yScale(0);
         const segments = d3.pairs(vis.points);
 
@@ -123,7 +115,6 @@ export default class LineChart {
         vis.topLine
             .datum(vis.points)
             .attr("d", vis.line);
-        // ─── ende neu ───
 
         vis.renderMarker();
     }

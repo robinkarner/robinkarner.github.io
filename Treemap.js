@@ -7,15 +7,13 @@ export default class Treemap {
             containerWidth: _config.containerWidth,
             containerHeight: _config.containerHeight,
             scaleMaximum: _config.scaleMaximum,
-            margin: {top: 30, bottom: 30, left: 15, right: 15}
+            margin: {top: 0, bottom: 0, left: 0, right: 0}
         };
 
         this.data = data;
         this.currentNode = data;
 
         this.dispatcher = dispatcher;
-
-        this.zoomStack = [];
 
         this.currentPrefix = data.codePrefix || "";
 
@@ -65,7 +63,7 @@ export default class Treemap {
 
         vis.renderLeaves(leaves);
         vis.renderBranches(branches);
-
+        vis.renderEmptyState(leaves.length === 0 && branches.length === 0);
     }
 
     renderBranches(branches) {
@@ -88,9 +86,7 @@ export default class Treemap {
                     .style("cursor", "zoom-in")
                     .on("click", (event, d) => {
                         event.stopPropagation();
-                        vis.zoomStack.push(vis.currentPrefix);
                         vis.currentPrefix = d.data.codePrefix || "";
-
                         vis.dispatcher.call("filtersChanged", event, {filter: "job", value: d.data.codePrefix});
                     }),
                 update => update,
@@ -196,13 +192,11 @@ export default class Treemap {
         });
     }
 
-    zoomOut(){
+    hierarchyUp(){
         let vis = this;
-
-        if(vis.zoomStack.length > 0){
-            const previousPrefix = vis.zoomStack.pop();
-            vis.currentPrefix = previousPrefix || "";
-            vis.dispatcher.call("filtersChanged", null, {filter: "job", value: vis.currentPrefix || ""});
+        if(vis.currentPrefix.length > 0){
+            vis.currentPrefix = vis.currentPrefix.slice(0, -1);
+            vis.dispatcher.call("filtersChanged", null, {filter: "job", value: vis.currentPrefix});
         }
     }
 
@@ -236,4 +230,30 @@ export default class Treemap {
 
         return null;
     }
+
+    navigateTo(prefix){
+        let vis = this;
+        vis.currentPrefix = prefix || "";
+        vis.dispatcher.call("filtersChanged", null, {filter: "job", value: vis.currentPrefix});
+    }
+
+    renderEmptyState(isEmpty){
+        let vis = this;
+        vis.svg.selectAll("text.treemap-empty")
+            .data(isEmpty ? [0] : [])
+            .join(
+                enter => enter.append("text")
+                    .attr("class", "treemap-empty")
+                    .attr("x", vis.width / 2)
+                    .attr("y", vis.height / 2)
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "#888")
+                    .attr("font-size", 16)
+                    .attr("font-weight", 600)
+                    .text("No Data"),
+                update => update,
+                exit => exit.remove()
+            );
+    }
+
 }
