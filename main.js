@@ -5,7 +5,9 @@ import Treemap from "./Treemap.js";
 import ChoroplethMap from "./ChoroplethMap.js";
 import ColorLegend from "./ColorLegend.js";
 import DonutChart from "./DonutChart.js";
+import LineChart from "./LineChart.js";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
 
 await initDB();
 
@@ -108,11 +110,32 @@ const nationalityDonutChart = new DonutChart({
     containerHeight: 300,
 }, formattedPieChartData.nationality);
 
+const allMonths = unemployedPerMonth.map(d => d.month);
+
+const digitByState = Object.fromEntries(
+    Object.entries(stateByDigit).map(([digit, name]) => [name, digit])
+);
+
+let currentWindowEnd = allMonths[allMonths.length - 1];
+
+const lineChart = new LineChart({
+    parentElement: "#line-chart-container",
+    containerWidth: 800,
+    containerHeight: 250,
+    colorScaleMax: sharedScaleMax,
+}, {
+    allMonths,
+    points: computeAverageStayLine(await getLineData(), allMonths),
+    markerMonth: currentWindowEnd
+});
+
+
 dispatcher.on("windowChanged", async windowDates => {
     data = await getData(windowDates.startDate, windowDates.endDate);
 
     updateChartData();
-
+    currentWindowEnd = windowDates.endDate;
+    lineChart.updateMarker(currentWindowEnd);
 });
 
 dispatcher.on("filtersChanged", filterUpdate => {
@@ -128,7 +151,7 @@ dispatcher.on("filtersChanged", filterUpdate => {
     }
 
     updateChartData();
-
+    updateLineChart();
 });
 
 function updateChartData(){
@@ -471,4 +494,73 @@ function getSharedScaleMax(jobData, stateData){
         .sort(d3.ascending);
 
     return d3.quantile(allValues, 0.95) ?? d3.max(allValues) ?? 1;
+}
+
+async function getLineData(){
+    let conditions = [];
+
+    if(filters.gender)      conditions.push(`GESCHLECHT = '${filters.gender}'`);
+    if(filters.nationality) conditions.push(`NATIONALITAET = '${filters.nationality}'`);
+    if(filters.state)       conditions.push(`LEFT(CAST(RGSCODE AS VARCHAR), 1) = '${digitByState[filters.state]}'`);
+    if(filters.job)         conditions.push(`LPAD(CAST(BERUFS4STELLER AS VARCHAR), 4, '0') LIKE '${filters.job}%'`);
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+    return await query(`
+        SELECT STRFTIME(CAST(DATUM AS DATE), '%Y-%m') AS month,
+               CAST(SUM(ZUGANG)  AS INTEGER) AS entries,
+               CAST(SUM(BESTAND) AS INTEGER) AS balance,
+               CAST(SUM(ABGANG)  AS INTEGER) AS departures
+        FROM unemployment
+        ${whereClause}
+        GROUP BY 1
+        ORDER BY 1;
+    `);
+}
+
+function computeAverageStayLine(monthlyRows, months, windowSize = 12){
+    const byMonth = new Map(monthlyRows.map(row => [row.month, row]));
+
+    const series = months.map(month => {
+        const row = byMonth.get(month);
+        return {
+            month,
+            entries: row ? (row.entries ?? 0) : 0,
+            balance: row ? (row.balance ?? 0) : 0,
+            departures: row ? (row.departures ?? 0) : 0
+        };
+    });
+
+    const points = [];
+
+    for(let i = 0; i + windowSize <= series.length; i++){
+        let entries = 0, balance = 0, departures = 0;
+        for(let j = i; j < i + windowSize; j++){
+            entries    += series[j].entries;
+            balance    += series[j].balance;
+            departures += series[j].departures;
+        }
+
+        const denominator = (entries + departures) * 0.5;
+        points.push({
+            month: series[i + windowSize - 1].month,
+            averageStay: denominator > 0 ? balance / denominator : 0
+        });
+    }
+
+    return points;
+}
+
+let lineChartRequestId = 0;
+
+async function updateLineChart(){
+    const requestId = ++lineChartRequestId;
+    const monthlyRows = await getLineData();
+    if(requestId !== lineChartRequestId) return;
+
+    const hasData = d3.sum(monthlyRows, r => (r.entries || 0) + (r.departures || 0)) > 0;
+    if(!hasData) return;
+
+    const points = computeAverageStayLine(monthlyRows, allMonths);
+    lineChart.updateVis({points, markerMonth: currentWindowEnd});
 }
