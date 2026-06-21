@@ -55,7 +55,7 @@ export default class LineChart {
             .attr("y", -12)
             .attr("font-size", 11)
             .attr("fill", "#555")
-            .text("⌀ Verweildauer (Monate) – 12-Monats-Verlauf");
+            .text("⌀ Months Unemployed – 12-Month Window");
 
         vis.colorScale = d3.scaleSequential(d3.interpolateBlues)
             .domain([0, vis.config.colorScaleMax || 1]);

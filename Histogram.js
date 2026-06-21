@@ -6,7 +6,7 @@ export default class Histogram {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth,
             containerHeight: _config.containerHeight,
-            margin: { top: 20, bottom: 20, right: 50, left: 50 }
+            margin: { top: 20, bottom: 20, right: 50, left: 100 }
         }
 
         this.data = data
@@ -57,6 +57,13 @@ export default class Histogram {
 
         const yAxisGroup = vis.svg.append("g")
             .call(vis.yAxis);
+
+        vis.svg.append("text")
+            .attr("class", "y-axis-title")
+            .attr("text-anchor", "middle")
+            .attr("transform", `translate(${-60}, ${height / 2}) rotate(-90)`)
+            .text("unemployed people")
+            .style("font-size", "10px");
 
         vis.svg.selectAll("rect")
             .data(data)

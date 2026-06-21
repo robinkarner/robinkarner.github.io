@@ -1,3 +1,7 @@
+body{
+    font-family: Arial, Helvetica, sans-serif;
+}
+
 rect.selected {
     stroke: red;
     stroke-width: 3px;
@@ -8,31 +12,77 @@ rect.selected {
     display: flex;
     align-items: flex-start;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 8px;
+    width: 98%;
+    height: 98%;
 }
 
 .config-section,
 .analysis-section {
     box-sizing: border-box;
     width: 100%;
-    padding: 10px;
+    padding: 1%;
     border-radius: 8px;
-    margin-bottom: 10px;
-}
-
-#timeline-chart-container{
-    width: 100%;
-    height: 20%;
 }
 
 .config-section   {
     background: #e7e9ef;
-    height: 80%;
+    height: 70vh;
+    margin-bottom: 1vh;
 }
 .analysis-section {
     background: #dbe8f7;
-    height: 20%;
+    height: 25vh;
+}
+
+#timeline-chart-container{
+    width: 99%;
+    height: 18%;
+}
+
+#config-body{
+    width: 99%;
+    height: 80%;
+    display: flex;
+}
+
+#legend-container{
+    height: 100%;
+    width: 3%;
+}
+
+#config-charts{
+    width: 97%;
+    height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5%;
+}
+
+#choropleth-container{
+    width: 59%;
+    height: 49%;
+}
+
+#gender-bar-chart-container,
+#nationality-bar-chart-container{
+    width: 19%;
+    height: 49%;
+}
+
+#job-list-container{
+    width: 19%;
+    height: 49%;
+}
+
+#line-chart-container{
+    width: 60%;
+    height: 100%;
+}
+
+#gender-donut-container,
+#nationality-donut-container{
+    width: 20%;
+    height: 100%;
 }
 
 .section-title {
@@ -58,6 +108,8 @@ rect.selected {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
+    width: 79%;
+    height: 49%;
 }
 
 .treemap-card svg { display: block; }
@@ -66,15 +118,21 @@ rect.selected {
     font-size: 12px;
     padding: 4px 10px;
     cursor: pointer;
+    width: 100%;
+}
+
+#treemap-container{
+    width: 100%;
+    height: 95%;
 }
 
 .no-data {
     display: none;
     align-items: center;
     justify-content: center;
-    width: 1300px;
+    width: 100%;
     max-width: 100%;
-    height: 250px;
+    height: 100%;
     font: 600 16px sans-serif;
     letter-spacing: .05em;
     color: #888;

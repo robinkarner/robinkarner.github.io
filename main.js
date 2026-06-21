@@ -43,8 +43,8 @@ const timelineContainerDims = getContainerDims("#timeline-chart-container");
 
 const timeline = new Histogram({
     parentElement: "#timeline-chart-container",
-    containerWidth: 1300,
-    containerHeight: 150,
+    containerWidth: timelineContainerDims.width,
+    containerHeight: timelineContainerDims.height,
 }, unemployedPerMonth, dispatcher);
 
 let data = await getData("2025-06", "2026-05");
@@ -56,30 +56,34 @@ let formattedPieChartData = formatPieChartData(data);
 
 let sharedScaleMax = getSharedScaleMax(formattedJobData, formattedChoroplethData);
 
+const genderBarChartContainerDims = getContainerDims("#gender-bar-chart-container");
+
 const genderBarChart = new BarChart({
     parentElement: "#gender-bar-chart-container",
-    containerWidth: 300,
-    containerHeight: 300,
+    containerWidth: genderBarChartContainerDims.width,
+    containerHeight: genderBarChartContainerDims.height,
 }, [
     {demographic: "male", value: formattedBarChartData.gender.male.averageStay},
     {demographic: "female", value: formattedBarChartData.gender.female.averageStay}
 ], dispatcher);
 
+const nationalityBarChartContainerDims = getContainerDims("#nationality-bar-chart-container");
 
 const nationalityBarChart = new BarChart({
     parentElement: "#nationality-bar-chart-container",
-    containerWidth: 300,
-    containerHeight: 300,
+    containerWidth: nationalityBarChartContainerDims.width,
+    containerHeight: nationalityBarChartContainerDims.height,
 }, [
     {demographic: "citizens", value: formattedBarChartData.nationality.citizens.averageStay},
     {demographic: "non-citizens", value: formattedBarChartData.nationality.nonCitizens.averageStay}
 ], dispatcher);
 
+const treeMapContainerDims = getContainerDims("#treemap-container");
 
 const treeMap = new Treemap({
     parentElement: "#treemap-container",
-    containerWidth: 1000,
-    containerHeight: 350,
+    containerWidth: treeMapContainerDims.width,
+    containerHeight: treeMapContainerDims.height,
     scaleMaximum: sharedScaleMax,
 }, formattedJobData, dispatcher);
 
@@ -88,29 +92,37 @@ document.querySelector("#zoom-out").addEventListener("click", () => {
     treeMap.hierarchyUp();
 });
 
+const choroplethContainerDims = getContainerDims("#choropleth-container");
+
 const choroplethMap = new ChoroplethMap({
     parentElement: "#choropleth-container",
-    containerWidth: 600,
-    containerHeight: 300,
+    containerWidth: choroplethContainerDims.width,
+    containerHeight: choroplethContainerDims.height,
     scaleMaximum: sharedScaleMax,
 }, topoData, formattedChoroplethData, dispatcher);
 
+const legendContainerDims = getContainerDims("#legend-container");
+
 const legend = new ColorLegend({
     parentElement: "#legend-container",
-    containerWidth: 70,
-    containerHeight: 300
+    containerWidth: legendContainerDims.width,
+    containerHeight: legendContainerDims.height,
 }, sharedScaleMax);
+
+const genderDonutContainerDims = getContainerDims("#gender-donut-container");
 
 const genderDonutChart = new DonutChart({
     parentElement: "#gender-donut-container",
-    containerWidth: 240,
-    containerHeight: 240,
+    containerWidth: genderDonutContainerDims.width,
+    containerHeight: genderDonutContainerDims.height,
 }, formattedPieChartData.gender);
+
+const nationalityDonutContainerDims = getContainerDims("#nationality-donut-container");
 
 const nationalityDonutChart = new DonutChart({
     parentElement: "#nationality-donut-container",
-    containerWidth: 240,
-    containerHeight: 240,
+    containerWidth: nationalityDonutContainerDims.width,
+    containerHeight: nationalityDonutContainerDims.height,
 }, formattedPieChartData.nationality);
 
 const allMonths = unemployedPerMonth.map(d => d.month);
@@ -121,10 +133,12 @@ const digitByState = Object.fromEntries(
 
 let currentWindowEnd = allMonths[allMonths.length - 1];
 
+const lineChartContainerDims = getContainerDims("#line-chart-container");
+
 const lineChart = new LineChart({
     parentElement: "#line-chart-container",
-    containerWidth: 800,
-    containerHeight: 250,
+    containerWidth: lineChartContainerDims.width,
+    containerHeight: lineChartContainerDims.height,
     colorScaleMax: sharedScaleMax,
 }, {
     allMonths,

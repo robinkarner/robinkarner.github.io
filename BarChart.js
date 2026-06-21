@@ -55,6 +55,13 @@ export default class BarChart {
         vis.yAxisGroup = vis.svg.append("g")
             .call(vis.yAxis);
 
+        vis.svg.append("text")
+            .attr("class", "y-axis-title")
+            .attr("text-anchor", "middle")
+            .attr("transform", `translate(${-20}, ${vis.height / 2}) rotate(-90)`)
+            .text("months unemployed")
+            .style("font-size", "15px");
+
         vis.svg.selectAll("rect")
             .data(data)
             .enter()

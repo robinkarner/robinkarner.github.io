@@ -6,7 +6,7 @@ export default class ColorLegend {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth,
             containerHeight: _config.containerHeight,
-            margin: {top: 15, bottom: 15, left: 30, right: 30}
+            margin: {top: 15, bottom: 15, left: 0, right: 50}
         }
 
         this.maxValue = maxValue;
@@ -18,27 +18,38 @@ export default class ColorLegend {
         let vis = this;
 
         vis.legendHeight = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
-        vis.legendWidth = 20;
+        vis.legendWidth = 10;
 
-        vis.container = d3.select(vis.config.parentElement);
+        vis.container = d3.select(vis.config.parentElement)
+            .style("display", "flex")
+            .style("align-items", "flex-start")
+            .style("gap", "5px");
 
         vis.canvas = vis.container.append("canvas")
             .attr("width", vis.legendWidth)
             .attr("height", vis.legendHeight)
             .style("width", `${vis.legendWidth}px`)
             .style("height", `${vis.legendHeight}px`)
-            .style("display", "inline-block")
-            .style("vertical-align", "top")
-            .style("border", "solid 1px black");
+            .style("margin-top", `${vis.config.margin.top}px`)
+            .style("border", "solid 1px black")
+            .style("flex", "0 0 auto");
+
+        const svgWidth = vis.config.containerWidth - vis.legendWidth - 10 - vis.config.margin.right;
 
         vis.svg = vis.container.append("svg")
-            .attr("width", vis.config.containerWidth - vis.legendWidth)
+            .attr("width", svgWidth)
             .attr("height", vis.config.containerHeight)
-            .style("display", "inline-block")
-            .attr("transform", `translate(10, 0)`);
+            .style("flex", "0 0 auto");
 
         vis.axisGroup = vis.svg.append("g")
-            //.attr("transform", `translate(10, ${vis.config.margin.top})`);
+            .attr("transform", `translate(0, ${vis.config.margin.top})`);
+
+        vis.svg.append("text")
+            .attr("class", "y-axis-title")
+            .attr("text-anchor", "middle")
+            .attr("transform", `translate(${20}, ${vis.config.containerHeight / 2}) rotate(90)`)
+            .text("months unemployed")
+            .style("font-size", "15px");
 
         vis.updateVis(this.maxValue);
     }
