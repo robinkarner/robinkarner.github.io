@@ -42,6 +42,7 @@ export default class ChoroplethMap {
 
         vis.mapGroup = vis.svg.append("g");
         vis.borderGroup = vis.svg.append("g");
+        vis.selectedBorderGroup = vis.svg.append("g");
 
         vis.colorScale = d3.scaleSequential()
             .interpolator(d3.interpolateBlues);
@@ -64,12 +65,7 @@ export default class ChoroplethMap {
             .join("path")
             .attr("class", "state")
             .attr("d", vis.geoPath)
-            .attr("fill", d => {
-                if(d.properties.name === vis.selectedState) {
-                    return "red";
-                }
-                return vis.colorScale(d.properties.value)
-            })
+            .attr("fill", d => vis.colorScale(d.properties.value))
             .on("click", (event, d) => {
                 let value = null;
 
@@ -80,12 +76,8 @@ export default class ChoroplethMap {
                     vis.selectedState = null;
                 }
 
-                vis.mapGroup.selectAll(".state")
-                    .classed("selected", state => state.properties.name === vis.selectedState);
-
                 vis.dispatcher.call("filtersChanged", event, {filter: "state", value: value});
-            })
-            .transition();
+            });
 
         vis.borderGroup.selectAll(".state-border")
             .data([mesh(vis.topoData, vis.topoData.objects.laender)])
@@ -93,8 +85,22 @@ export default class ChoroplethMap {
             .attr("class", "state-border")
             .attr("d", vis.geoPath)
             .attr("fill", "none")
-            .attr("stroke", "black")
+            .attr("stroke", "lightgray")
             .attr("stroke-width", 1);
+
+        vis.selectedBorderGroup.selectAll(".selected-state-border")
+            .data(
+                vis.selectedState
+                    ? vis.states.filter(d => d.properties.name === vis.selectedState)
+                    : []
+            )
+        .join("path")
+            .attr("class", "selected-state-border")
+            .attr("d", vis.geoPath)
+            .attr("fill", "none")
+            .attr("stroke", "black")
+            .attr("stroke-width", 3)
+            .attr("pointer-events", "none");
     }
 
     updateVis(newData, newScaleMaximum) {

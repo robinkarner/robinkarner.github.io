@@ -6,7 +6,7 @@ export default class DonutChart {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth,
             containerHeight: _config.containerHeight,
-            margin: { top: 20, right: 20, bottom: 20, left: 20 }
+            margin: { top: 50, right: 50, bottom: 50, left: 50 }
         };
 
         this.data = data;
@@ -36,7 +36,7 @@ export default class DonutChart {
 
         vis.colorScale = d3.scaleOrdinal()
             .domain(vis.data.map(d => d.label))
-            .range(["#5B8FF9", "#61DDAA"]);
+            .range(["#0097E0", "#FFAA4F"]);
 
         vis.renderVis();
     }

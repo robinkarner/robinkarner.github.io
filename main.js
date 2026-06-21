@@ -39,6 +39,8 @@ let unemployedPerMonth = await query(`SELECT STRFTIME(CAST(Datum AS DATE), '%Y-%
                                           CAST( SUM(BESTAND) AS INTEGER) AS unemployed_sum 
                                           FROM unemployment GROUP BY 1 ORDER BY 1;`);
 
+const timelineContainerDims = getContainerDims("#timeline-chart-container");
+
 const timeline = new Histogram({
     parentElement: "#timeline-chart-container",
     containerWidth: 1300,
@@ -611,4 +613,9 @@ function collectLeaves(node, acc = []){
         for(const child of node.children) collectLeaves(child, acc);
     }
     return acc;
+}
+
+function getContainerDims(containerString){
+    const {width, height} = document.querySelector(containerString).getBoundingClientRect();
+    return {width, height};
 }

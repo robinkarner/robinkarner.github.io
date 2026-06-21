@@ -65,7 +65,9 @@ export default class Histogram {
             .attr("width", vis.xScale.bandwidth())
             .attr("height", d => height - vis.yScale(d.unemployed_sum))
             .attr("x", d => vis.xScale(d.month))
-            .attr("y", d => vis.yScale(d.unemployed_sum));
+            .attr("y", d => vis.yScale(d.unemployed_sum))
+            .attr("fill", "#FFBC73")
+            .attr("stroke", "black");
 
         const windowWidth = vis.xScale.step() * 12;
 

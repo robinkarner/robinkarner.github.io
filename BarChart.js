@@ -106,7 +106,9 @@ export default class BarChart {
             .attr("width", vis.xScale.bandwidth())
             .attr("height", d => vis.height - vis.yScale(d.value ?? 0))
             .attr("x", d => vis.xScale(d.demographic))
-            .attr("y", d => vis.yScale(d.value ?? 0));
+            .attr("y", d => vis.yScale(d.value ?? 0))
+            .attr("fill", "#FFBC73")
+            .attr("stroke", "black");
     }
 
     updateVis(newData) {
@@ -125,7 +127,9 @@ export default class BarChart {
             .attr("width", vis.xScale.bandwidth())
             .attr("height", d => vis.height - vis.yScale(d.value ?? 0))
             .attr("x", d => vis.xScale(d.demographic))
-            .attr("y", d => vis.yScale(d.value ?? 0));
+            .attr("y", d => vis.yScale(d.value ?? 0))
+            .attr("fill", "#FFBC73")
+            .attr("stroke", "black");;
 
     }
 
