@@ -42,7 +42,15 @@ export default class Story {
                 nationality: "Inländer_innen",
                 job: "647",
                 state: null,
-                text: "Let's look at a specific demographic: Austrian citizens that work in IT. The months spent unemployed are a bit higher than average (4.3 compared to 3.7), but not much. Around this time, ChatGPT was also introduced. Did it have any effect on unemployment?"
+                text: "Let's look at a specific demographic: Austrian citizens that work in IT. The months spent unemployed are a bit higher than average (4.3 compared to 3.7), but not much."
+            },
+            {
+                windowIndex: 35,
+                gender: null,
+                nationality: "Inländer_innen",
+                job: "647",
+                state: null,
+                text: "These are the values for November 2022, the time around which ChatGPT was introduced. Average months unemployed in IT Jobs were 3.9, whe the general value was 3.4 months. Does AI have an impact on unemployment?"
             },
             {
                 windowIndex: 77,
@@ -50,15 +58,15 @@ export default class Story {
                 nationality: "Inländer_innen",
                 job: "647",
                 state: null,
-                text: "In the present, the number of unemployed months for citizens in IT jobs has risen to 5 (0.7 month increase), while the national average has only climbed to 4 (0.3 month increase). Unemployment in this field seems to rise more quickly, which may be due to the rise of mainstream AI. At least the percentage of women in the field has risen from 12% to 15%."
+                text: "In the present, the number of unemployed months for citizens in IT jobs has risen to 5 (1.1 month increase), while the national average has only climbed to 4 (0.6 month increase). Unemployment in this field seems to rise more quickly, which may be due to the rise of mainstream AI."
             },
             {
-                windowIndex: 28,
+                windowIndex: 35,
                 gender: null,
                 nationality: "Inländer_innen",
                 job: "647",
                 state: null,
-                text: "To find out, if any regions are affected more than others, we have to look at the data from April 2022 again. Look at the map when the date changes to the current one."
+                text: "To find out, if any regions are affected more than others, we have to look at the data from November 2022 again. Look at the map when the date changes to the current one."
             },
             {
                 windowIndex: 77,
@@ -66,7 +74,7 @@ export default class Story {
                 nationality: "Inländer_innen",
                 job: "647",
                 state: null,
-                text: "As you can see, all federal states of Austria got darker. Styria has the largest difference (1.1 months), but Vienna has the highest absolute value with 5.8 months. Finding a job in a place with many people seems to take longer."
+                text: "As you can see, all federal states of Austria got darker. Burgenland has the largest difference (1.3 months), but Vienna has the highest absolute value with 5.8 months. Finding a job in a place with many people seems to take longer. Salzburg and Vorarlberg had the smallest jumps (0.7 month increase)."
             },
             {
                 windowIndex: 77,
