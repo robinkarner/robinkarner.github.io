@@ -78,7 +78,7 @@ export default class Histogram {
 
         const windowWidth = vis.xScale.step() * 12;
 
-        vis.svg.append("rect")
+        vis.dragWindow = vis.svg.append("rect")
             .attr("x", width - windowWidth)
             .attr("y", 0)
             .attr("width", windowWidth)
@@ -93,6 +93,8 @@ export default class Histogram {
 
                     startIndex = Math.max(0, Math.min(startIndex, data.length - 12));
 
+                    console.log(startIndex);
+
                     const snappedX = startIndex * vis.xScale.step();
 
                     d3.select(this).attr("x", snappedX);
@@ -106,5 +108,14 @@ export default class Histogram {
                     vis.dispatcher.call("windowChanged", event, {startDate: data[startIndex].month, endDate: data[startIndex + 11].month});
                 })
             );
+    }
+
+    updateWindowByIndex(index){
+        let vis = this;
+        const snappedX = index * vis.xScale.step();
+
+        vis.dragWindow.attr("x", snappedX);
+
+        return {startDate: vis.data[index].month, endDate: vis.data[index + 11].month};
     }
 }

@@ -196,6 +196,7 @@ export default class Treemap {
         let vis = this;
         if(vis.currentPrefix.length > 0){
             vis.currentPrefix = vis.currentPrefix.slice(0, -1);
+            console.log(vis.currentPrefix);
             vis.dispatcher.call("filtersChanged", null, {filter: "job", value: vis.currentPrefix});
         }
     }
@@ -227,6 +228,8 @@ export default class Treemap {
             const found = this.findNodeByPrefix(child, prefix);
             if(found) return found;
         }
+
+        console.log(prefix);
 
         return null;
     }

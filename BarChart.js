@@ -136,8 +136,20 @@ export default class BarChart {
             .attr("x", d => vis.xScale(d.demographic))
             .attr("y", d => vis.yScale(d.value ?? 0))
             .attr("fill", "#FFBC73")
-            .attr("stroke", "black");;
+            .attr("stroke", "black");
 
+    }
+
+    selectBar(demographic){
+        let vis = this;
+
+        vis.selectedBar = demographic;
+
+        vis.svg.selectAll("rect")
+            .classed("selected", bar => bar.demographic === vis.selectedBar)
+            .attr("stroke", bar => bar.demographic === vis.selectedBar ? "red" : "black")
+            .attr("stroke-width", bar => bar.demographic === vis.selectedBar ? 3 : 1)
+            .attr("fill", bar => bar.demographic === vis.selectedBar ? "#FF8F0F" : "#FFBC73");
     }
 
 }

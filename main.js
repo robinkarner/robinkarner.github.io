@@ -7,6 +7,7 @@ import ColorLegend from "./ColorLegend.js";
 import DonutChart from "./DonutChart.js";
 import LineChart from "./LineChart.js";
 import JobList from "./JobList.js";
+import Story from "./Story.js";
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 
@@ -21,6 +22,8 @@ let filters = {
     state: null
 }
 
+let lastWindowIndex = -1;
+
 const stateByDigit = {
     1: "Burgenland",
     2: "Kärnten",
@@ -33,7 +36,7 @@ const stateByDigit = {
     9: "Wien"
 }
 
-const dispatcher = d3.dispatch("windowChanged", "filtersChanged");
+const dispatcher = d3.dispatch("windowChanged", "filtersChanged", "storyUpdate");
 
 let unemployedPerMonth = await query(`SELECT STRFTIME(CAST(Datum AS DATE), '%Y-%m') AS month, 
                                           CAST( SUM(BESTAND) AS INTEGER) AS unemployed_sum 
@@ -154,9 +157,23 @@ const jobList = new JobList({
     leaves: collectLeaves(formattedJobData).sort((a, b) => (b.balance || 0) - (a.balance || 0)),
 }, dispatcher);
 
+let story = new Story(dispatcher);
+
+story.initStory();
+
+document.querySelector("#back").addEventListener("click", () => {
+    story.prevStory();
+});
+
+document.querySelector("#forward").addEventListener("click", () => {
+    story.nextStory();
+});
+
 
 dispatcher.on("windowChanged", async windowDates => {
     data = await getData(windowDates.startDate, windowDates.endDate);
+
+    lastWindowIndex = -1;
 
     updateChartData();
     currentWindowEnd = windowDates.endDate;
@@ -178,6 +195,40 @@ dispatcher.on("filtersChanged", filterUpdate => {
     updateChartData();
     updateLineChart();
 });
+
+dispatcher.on("storyUpdate", async currentStory => {
+
+    filters.gender = currentStory.gender;
+    filters.nationality = currentStory.nationality;
+    filters.job = currentStory.job;
+    filters.state = currentStory.state;
+
+    if(lastWindowIndex !== currentStory.windowIndex) {
+        const newDates = timeline.updateWindowByIndex(currentStory.windowIndex);
+        lastWindowIndex = currentStory.windowIndex;
+        data = await getData(newDates.startDate, newDates.endDate);
+        currentWindowEnd = newDates.endDate;
+    }
+
+    treeMap.currentPrefix = currentStory.job || "";
+
+    updateChartData();
+
+    lineChart.updateMarker(currentWindowEnd);
+    await updateLineChart();
+
+    if(currentStory.gender) {
+        genderBarChart.selectBar(currentStory.gender === "M" ? "male" : "female");
+    }else{
+        genderBarChart.selectBar(null);
+    }
+    if(currentStory.nationality) {
+        nationalityBarChart.selectBar(currentStory.nationality === "Inländer_innen" ? "citizens" : "non-citizens");
+    }else{
+        nationalityBarChart.selectBar(null);
+    }
+
+})
 
 function updateChartData(){
 
