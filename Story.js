@@ -10,7 +10,7 @@ export default class Story {
                 nationality: null,
                 job: "",
                 state: null,
-                text: "Austria's unemployment seems stable. The trend goes up only a bit, but the average months spent unemployed get more."
+                text: "Austria's unemployment seems stable. The overall number of unemployed people periodically rises in the winter months, and falls in the summer months. The overall trend is going upwards only slightly, but the number of months spent unemployed is rising."
             },
             {
                 windowIndex: 15,
