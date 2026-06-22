@@ -21,12 +21,20 @@ export default class Story {
                 text: "The biggest spike in recent years was due to the Covid-19 pandemic."
             },
             {
+              windowIndex: 0,
+              gender: null,
+              nationality: null,
+              job: "",
+              state: null,
+              text: "The pre-pandemic number of months spent unemployed on average was 3.5."
+            },
+            {
                 windowIndex: 28,
                 gender: null,
                 nationality: null,
                 job: "",
                 state: null,
-                text: "But by April 2022 the average months spent unemployed were already down again to their pre Covid-19 levels, or even lower."
+                text: "After Covid-19, that value is reached again by April 2022, so we assume that the adverse effects from the pandemic are over at that point."
             },
             {
                 windowIndex: 28,
