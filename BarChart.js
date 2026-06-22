@@ -136,7 +136,9 @@ export default class BarChart {
             .attr("x", d => vis.xScale(d.demographic))
             .attr("y", d => vis.yScale(d.value ?? 0))
             .attr("fill", "#FFBC73")
-            .attr("stroke", "black");
+            .attr("stroke", "black")
+            .attr("stroke-width", 1);
+
 
     }
 

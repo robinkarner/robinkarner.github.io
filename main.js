@@ -212,6 +212,8 @@ dispatcher.on("storyUpdate", async currentStory => {
 
     treeMap.currentPrefix = currentStory.job || "";
 
+    choroplethMap.selectState(currentStory.state);
+
     updateChartData();
 
     lineChart.updateMarker(currentWindowEnd);

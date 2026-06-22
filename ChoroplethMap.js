@@ -109,4 +109,8 @@ export default class ChoroplethMap {
         vis.config.scaleMaximum = newScaleMaximum;
         vis.renderVis();
     }
+
+    selectState(state){
+        this.selectedState = state;
+    }
 }
